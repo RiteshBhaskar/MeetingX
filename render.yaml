@@ -1,5 +1,5 @@
 services:
-  # 1. Backend Service (FastAPI + Faster-Whisper + FFmpeg)
+  # 1. Backend Service (FastAPI + Faster-Whisper + FFmpeg via Docker)
   - type: web
     name: meetingx-backend
     runtime: docker
@@ -7,6 +7,7 @@ services:
     dockerContext: backend
     plan: free
     region: oregon
+    healthCheckPath: /api/v1/health
     envVars:
       - key: WHISPER_MODEL
         value: base
@@ -16,8 +17,10 @@ services:
         value: int8
       - key: MAX_UPLOAD_SIZE_MB
         value: 500
+      - key: HOST
+        value: 0.0.0.0
 
-  # 2. Frontend Service (React + Vite)
+  # 2. Frontend Service (React + Vite Static Site)
   - type: web
     name: meetingx-frontend
     runtime: static

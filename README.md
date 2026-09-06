@@ -2,20 +2,20 @@
 
 A production-quality, modular, free and open-source **Meeting Intelligence Platform**.
 
-**Phase 1 Focus**: End-to-end local Audio/Video Speech-to-Text pipeline with timestamped structured transcript generation.
-*No paid APIs, no OpenAI/Gemini/Claude keys required. Runs completely locally on CPU or NVIDIA GPU.*
+**Phase 1 Focus**: End-to-end Audio/Video Speech-to-Text pipeline with timestamped structured transcript generation.
+*No paid APIs, no OpenAI/Gemini/Claude keys required. Runs completely locally on CPU/GPU or deployed on Render cloud.*
 
 ---
 
-## Architecture & Data Flow
+## 🏗️ Architecture & Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                             USER INTERFACE                                  │
 │                 React (Vite) + Tailwind CSS + Lucide Icons                  │
 │   • Drag & Drop Audio/Video Uploader                                        │
-│   • Live Upload & Inference Progress Indicator                              │
-│   • Interactive Transcript Viewer (Search, Copy, Export TXT / JSON / SRT)   │
+│   • Live Ingestion & Inference Progress Indicator                           │
+│   • Interactive Transcript Viewer (Search, Copy, Export TXT/JSON/SRT/CSV)   │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ POST /api/v1/meetings/upload
                                        ▼
@@ -33,18 +33,7 @@ A production-quality, modular, free and open-source **Meeting Intelligence Platf
 
 ---
 
-## Supported Media Formats
-
-| Type | Supported File Extensions |
-| :--- | :--- |
-| **Audio** | `.mp3`, `.wav`, `.m4a`, `.flac`, `.ogg` |
-| **Video** | `.mp4`, `.mkv`, `.mov`, `.webm` |
-
-*Configurable maximum file size (default: 500 MB).*
-
----
-
-## Directory Structure
+## 📁 Directory Structure
 
 ```
 major_project/
@@ -69,16 +58,17 @@ major_project/
 │   │   └── utils/
 │   │       ├── __init__.py
 │   │       └── file_utils.py           # Sanitization, time formatters, safe file removal
-│   ├── tests/                          # Automated Pytest suite (Whisper mocked)
+│   ├── tests/                          # Automated Pytest suite
 │   │   ├── conftest.py
 │   │   ├── test_health.py
 │   │   ├── test_upload_validation.py
 │   │   ├── test_transcription.py
 │   │   └── test_file_utils.py
-│   ├── data/                           # Local storage for uploads/extracted media (.gitignored)
+│   ├── Dockerfile                      # Production Docker container with FFmpeg & Python 3.11
+│   ├── .dockerignore
+│   ├── runtime.txt                     # Python 3.11 version specifier
 │   ├── requirements.txt                # Python dependencies
-│   ├── .env.example
-│   └── README.md
+│   └── .env.example
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -87,220 +77,88 @@ major_project/
 │   │   │   ├── UploadProgress.jsx      # Upload % & stage transition indicators
 │   │   │   └── TranscriptViewer.jsx    # Formatted transcript with search & exports
 │   │   ├── services/
-│   │   │   └── api.js                  # Axios HTTP client with progress tracking
+│   │   │   └── api.js                  # Axios HTTP client with dynamic VITE_API_URL
 │   │   ├── App.jsx                     # Application layout & state coordination
 │   │   ├── main.jsx                    # React entrypoint
 │   │   └── index.css                   # Tailwind styles & theme customizations
 │   ├── package.json
 │   ├── vite.config.js
 │   ├── tailwind.config.js
-│   └── postcss.config.js
-├── .env.example
+│   ├── postcss.config.js
+│   └── .env.example
+├── .env.example                        # Root environment reference
 ├── .gitignore
+├── Makefile                            # One-command runners (make dev, make test)
+├── render.yaml                         # Render 1-click Blueprint configuration
+├── run_backend.sh                      # Backend start script
+├── run_frontend.sh                     # Frontend start script
+├── run_tests.sh                        # Pytest runner script
+├── start.sh                            # Unified concurrent startup script
 └── README.md
 ```
 
 ---
 
-## Prerequisites
+## 💻 Local Development Setup
 
-Before starting, ensure you have:
+### Prerequisites
 1. **Python 3.11+**
 2. **Node.js 18+** & **npm**
-3. **FFmpeg** installed and accessible in your system PATH
+3. **FFmpeg** installed on your system PATH
 
-### Installing FFmpeg
+#### Installing FFmpeg Locally
+- **macOS (Homebrew):** `brew install ffmpeg`
+- **Linux (Ubuntu/Debian):** `sudo apt update && sudo apt install -y ffmpeg`
+- **Windows (winget):** `winget install Gyan.FFmpeg`
 
-#### macOS (via Homebrew)
+---
+
+### Option A: One-Command Startup (Recommended)
+
+From the project root directory:
+
 ```bash
-brew install ffmpeg
+# Make scripts executable
+chmod +x start.sh run_backend.sh run_frontend.sh run_tests.sh
+
+# Run both Backend & Frontend concurrently
+./start.sh
+# or: make dev
 ```
 
-#### Ubuntu / Debian Linux
+- **Frontend App:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- **Swagger Documentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Health Check:** [http://127.0.0.1:8000/api/v1/health](http://127.0.0.1:8000/api/v1/health)
+
+---
+
+### Option B: Run in Separate Terminals
+
+#### Terminal 1 — Backend (FastAPI)
 ```bash
-sudo apt update
-sudo apt install -y ffmpeg
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+
+# Run FastAPI with live reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-#### Windows (via winget or Chocolatey)
-```powershell
-# Using winget:
-winget install Gyan.FFmpeg
-
-# Or using Chocolatey:
-choco install ffmpeg
-```
-
-Verify installation:
+#### Terminal 2 — Frontend (React / Vite)
 ```bash
-ffmpeg -version
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## Quick Start Guide
+## 🧪 Automated Testing
 
-### Step 1: Set Up Backend
-
-1. Navigate to the `backend/` directory:
-   ```bash
-   cd backend
-   ```
-
-2. Create and activate a Python virtual environment:
-   ```bash
-   python3 -m venv .venv
-
-   # macOS / Linux:
-   source .venv/bin/activate
-
-   # Windows (Command Prompt):
-   .venv\Scripts\activate.bat
-
-   # Windows (PowerShell):
-   .venv\Scripts\Activate.ps1
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-4. Create configuration file:
-   ```bash
-   cp .env.example .env
-   ```
-
-5. Start the FastAPI backend:
-   ```bash
-   uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-   ```
-
-Backend will be running at:
-- **API Base**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- **Interactive Swagger Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **Health Check**: [http://127.0.0.1:8000/api/v1/health](http://127.0.0.1:8000/api/v1/health)
-
----
-
-### Step 2: Set Up Frontend
-
-In a separate terminal window:
-
-1. Navigate to the `frontend/` directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install npm dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open your browser and navigate to:
-   [http://localhost:5173](http://localhost:5173)
-
----
-
-## Configuration Reference (`.env`)
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `WHISPER_MODEL` | `base` | Model size: `tiny`, `base`, `small`, `medium`, `large-v3` |
-| `WHISPER_DEVICE` | `cpu` | Device: `cpu` or `cuda` |
-| `WHISPER_COMPUTE_TYPE` | `int8` | Precision: `int8`, `float32` (CPU) or `float16`, `int8_float16` (CUDA) |
-| `MAX_UPLOAD_SIZE_MB` | `500` | Maximum allowed file upload size in megabytes |
-| `HOST` | `127.0.0.1` | Backend host binding |
-| `PORT` | `8000` | Backend port |
-| `CORS_ORIGINS` | `http://localhost:5173,...` | Allowed CORS origins for frontend requests |
-| `DATA_DIR` | `data` | Local directory for intermediate files and downloaded models |
-
-### Switching to GPU (NVIDIA CUDA)
-To enable GPU acceleration on systems with NVIDIA GPUs:
-1. In `backend/.env`, set:
-   ```ini
-   WHISPER_DEVICE=cuda
-   WHISPER_COMPUTE_TYPE=float16
-   ```
-2. Verify NVIDIA drivers and CUDA toolkit are installed.
-
----
-
-## API Endpoints
-
-### 1. Health Check
-`GET /api/v1/health`
-
-**Response (`200 OK`):**
-```json
-{
-  "status": "ok",
-  "whisper_model": "base",
-  "whisper_device": "cpu",
-  "whisper_compute_type": "int8",
-  "ffmpeg_available": true,
-  "max_upload_size_mb": 500
-}
-```
-
----
-
-### 2. Upload and Transcribe Meeting
-`POST /api/v1/meetings/upload`
-
-**Request Body (multipart/form-data):**
-- `file`: Meeting audio or video recording file.
-
-**Sample Response (`200 OK`):**
-```json
-{
-  "meeting_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-  "filename": "team_meeting.mp4",
-  "media_type": "video",
-  "language": "en",
-  "language_probability": 0.985,
-  "duration": 1250.4,
-  "duration_formatted": "20:50",
-  "segment_count": 2,
-  "segments": [
-    {
-      "id": 0,
-      "start": 0.0,
-      "end": 5.2,
-      "start_formatted": "00:00:00",
-      "end_formatted": "00:00:05",
-      "text": "Today we need to discuss the backend architecture.",
-      "confidence": 0.952,
-      "avg_logprob": -0.048,
-      "no_speech_prob": 0.012
-    },
-    {
-      "id": 1,
-      "start": 5.2,
-      "end": 10.8,
-      "start_formatted": "00:00:05",
-      "end_formatted": "00:00:10",
-      "text": "Rahul will handle the API integration.",
-      "confidence": 0.941,
-      "avg_logprob": -0.061,
-      "no_speech_prob": 0.018
-    }
-  ],
-  "full_text": "Today we need to discuss the backend architecture. Rahul will handle the API integration."
-}
-```
-
----
-
-## Automated Backend Testing
-
-Run the automated test suite with `pytest`:
+Run the automated backend test suite:
 
 ```bash
 cd backend
@@ -308,75 +166,123 @@ source .venv/bin/activate
 pytest -v
 ```
 
-*Note: The test suite mocks the Whisper model and FFmpeg processing to guarantee instant, reproducible offline execution without downloading models during CI/testing.*
+---
+
+## 🐙 Git & GitHub Workflow
+
+To commit and push all changes to your GitHub repository:
+
+```bash
+cd /Users/riteshbhaskar/Downloads/project/major_project
+
+# 1. Stage all deployment files
+git add .
+
+# 2. Commit
+git commit -m "feat: complete Phase 1 deployment configuration for Render and GitHub"
+
+# 3. Ensure branch is main
+git branch -M main
+
+# 4. Set remote repository
+git remote set-url origin https://github.com/RiteshBhaskar/MeetingX.git 2>/dev/null || git remote add origin https://github.com/RiteshBhaskar/MeetingX.git
+
+# 5. Push to GitHub
+git push -u origin main
+```
 
 ---
 
-## Troubleshooting
+## 🚀 Deployment to Render.com
 
-### 1. `FFmpeg is not installed on the server`
-- **Cause**: The `ffmpeg` binary was not found in your system's PATH.
-- **Fix**: Install FFmpeg (e.g. `brew install ffmpeg` on macOS, `sudo apt install ffmpeg` on Linux) and verify with `ffmpeg -version`. Restart the backend server after installation.
+This project is configured for cloud deployment on **Render**:
 
-### 2. `Unsupported file format`
-- **Cause**: The file uploaded does not have an allowed audio/video extension.
-- **Fix**: Supported extensions are `.mp3`, `.wav`, `.m4a`, `.flac`, `.ogg`, `.mp4`, `.mkv`, `.mov`, `.webm`.
-
-### 3. `File size exceeds maximum allowed upload size`
-- **Cause**: The uploaded file is larger than `MAX_UPLOAD_SIZE_MB`.
-- **Fix**: Adjust `MAX_UPLOAD_SIZE_MB=1000` in `.env` to accommodate larger recordings.
-
-### 4. Slow transcription on CPU
-- **Fix**: By default, Faster-Whisper is configured with `WHISPER_MODEL=base` and `WHISPER_COMPUTE_TYPE=int8` which runs quickly on modern CPUs. For even faster transcription, switch to `WHISPER_MODEL=tiny`.
+- **Backend**: Containerized **Docker Web Service** ensuring FFmpeg and Python 3.11 Faster-Whisper are pre-installed.
+- **Frontend**: **Static Site** built with Vite.
 
 ---
 
-## Project Roadmap
+### Method 1: Automated Blueprint Deployment (1-Click)
 
-```
-PHASE 1 (Completed)
- Audio/Video → Speech-to-Text Pipeline (Faster-Whisper + FFmpeg + FastAPI + React)
+1. Log into your **[Render Dashboard](https://dashboard.render.com/)**.
+2. Click **New +** → **Blueprint**.
+3. Select your repository: **`RiteshBhaskar/MeetingX`**.
+4. Render will automatically parse [`render.yaml`](file:///Users/riteshbhaskar/Downloads/project/major_project/render.yaml) and create both services.
+5. Click **Apply**.
 
-PHASE 2
- Speaker Diarization (PyAnnote Audio / Local Diarization model, Speaker Identification)
+---
 
-PHASE 3
- NLP Intelligence
- • Executive Summary
- • Topic Modeling & Agenda Tracking
- • Key Decisions
- • Action Items & Owner Assignment
- • Deadlines & Milestones
- • Risk & Blocker Extraction
+### Method 2: Manual Web Service & Static Site Setup
 
-PHASE 4
- Hybrid RAG
- • Smart Chunking (Speaker & Topic aligned)
- • Local Embeddings
- • Vector Database (Qdrant / ChromaDB)
- • Meeting Interactive Chatbot
+#### Step 1: Deploy Backend Web Service
+1. In Render Dashboard, click **New +** → **Web Service**.
+2. Connect your GitHub repository: `RiteshBhaskar/MeetingX`.
+3. Configure the settings:
+   - **Name**: `meetingx-backend`
+   - **Runtime**: `Docker`
+   - **Dockerfile Path**: `backend/Dockerfile`
+   - **Docker Context**: `backend`
+   - **Instance Type**: `Free` or `Starter`
+   - **Health Check Path**: `/api/v1/health`
+4. Add Environment Variables:
+   - `WHISPER_MODEL`: `base` (or `tiny` for faster startup)
+   - `WHISPER_DEVICE`: `cpu`
+   - `WHISPER_COMPUTE_TYPE`: `int8`
+   - `MAX_UPLOAD_SIZE_MB`: `500`
+   - `HOST`: `0.0.0.0`
+5. Click **Create Web Service**.
+6. Copy your deployed Backend URL (e.g. `https://meetingx-backend.onrender.com`).
 
-PHASE 5
- Advanced Intelligence
- • Knowledge Graph Generation
- • Cross-Meeting Longitudinal Memory
- • Hybrid Search (Dense + Sparse BM25)
- • Reranking
+#### Step 2: Deploy Frontend Static Site
+1. In Render Dashboard, click **New +** → **Static Site**.
+2. Connect your GitHub repository: `RiteshBhaskar/MeetingX`.
+3. Configure the settings:
+   - **Name**: `meetingx-frontend`
+   - **Build Command**: `cd frontend && npm install && npm run build`
+   - **Publish Directory**: `frontend/dist`
+4. Add Environment Variables:
+   - `VITE_API_URL`: `https://meetingx-backend.onrender.com` (your backend URL from Step 1)
+5. Click **Create Static Site**.
 
-PHASE 6
- Evidence Verification
- • Source Attribution & Timestamp Citations
- • Grounding & Hallucination Detection
- • Evidence Confidence Scoring
+---
 
-PHASE 7
- Production & Scale
- • Authentication & RBAC (Role-Based Access Control)
- • Background Task Workers (Celery / Redis / ARQ)
- • PostgreSQL Database Integration
- • Docker Containerization & Helm Charts
- • Cloud Deployment & Observability (OpenTelemetry / Prometheus)
-```
-# MEETING-INTELLIGENCE
-# MEETING-INTELLIGENCE
-# MEETING-INTELLIGENCE
+## ⚙️ Environment Variables Reference
+
+### Backend (`backend/.env` / Render Web Service)
+
+| Variable | Default (Local) | Render Production Example | Description |
+| :--- | :--- | :--- | :--- |
+| `HOST` | `0.0.0.0` | `0.0.0.0` | Host address binding |
+| `PORT` | `8000` | Injected dynamically by Render | Web server listening port |
+| `WHISPER_MODEL` | `base` | `base` (or `tiny`) | Model size (`tiny`, `base`, `small`, `medium`, `large-v3`) |
+| `WHISPER_DEVICE` | `cpu` | `cpu` | Compute device (`cpu` or `cuda`) |
+| `WHISPER_COMPUTE_TYPE` | `int8` | `int8` | Model precision quantization |
+| `MAX_UPLOAD_SIZE_MB` | `500` | `500` | Maximum file upload limit in MB |
+| `FRONTEND_URL` | *(none)* | `https://meetingx-frontend.onrender.com` | Production frontend domain for strict CORS |
+| `CORS_ORIGINS` | `http://localhost:5173,...` | `http://localhost:5173,...` | Comma-separated allowed dev origins |
+| `DATA_DIR` | `data` | `data` | Ephemeral scratch directory for audio extraction |
+
+### Frontend (`frontend/.env` / Render Static Site)
+
+| Variable | Default (Local) | Render Production Example | Description |
+| :--- | :--- | :--- | :--- |
+| `VITE_API_URL` | *(empty — uses Vite proxy)* | `https://meetingx-backend.onrender.com` | Full URL of the FastAPI backend service |
+
+---
+
+## ⚠️ Cloud & Storage Notes
+
+- **Ephemeral Storage**: In Render Free and Starter web services, the local filesystem is ephemeral. Temporary files created during audio extraction are automatically deleted in the `finally` block after each meeting transcript is produced.
+- **Spin-down Behavior**: On Render's Free tier, the backend web service spins down after 15 minutes of inactivity. When a new request arrives, Render automatically wakes up the container (~30-50 seconds). The live status indicator in the frontend top navbar will reflect the backend's availability.
+
+---
+
+## 🗺️ Project Roadmap
+
+- **Phase 1 (Current)**: Local/Cloud Speech-to-Text with Faster-Whisper, FFmpeg, and structured timestamped transcript viewer.
+- **Phase 2**: Local Speaker Diarization (Speaker identification & turn-taking alignment).
+- **Phase 3**: NLP Intelligence (Executive summaries, action items, key decisions, risks).
+- **Phase 4**: Hybrid RAG (Vector storage, semantic chunking, and meeting query chatbot).
+- **Phase 5**: Advanced Intelligence (Knowledge graphs, cross-meeting memory, hybrid search).
+- **Phase 6**: Evidence Verification (Source attribution and confidence grounding).
+- **Phase 7**: Production Scale (Auth, RBAC, background task queues, PostgreSQL).

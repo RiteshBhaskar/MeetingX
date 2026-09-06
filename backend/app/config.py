@@ -28,10 +28,13 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 500
 
     # Server settings
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # CORS settings
+    # Optional Deployed Frontend URL (e.g., https://meetingx-frontend.onrender.com)
+    FRONTEND_URL: Optional[str] = None
+
+    # CORS settings (Default local dev origins)
     CORS_ORIGINS: Union[str, List[str]] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -53,6 +56,17 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @property
+    def all_cors_origins(self) -> List[str]:
+        """Combine default CORS origins with FRONTEND_URL if provided."""
+        origins = list(self.CORS_ORIGINS) if isinstance(self.CORS_ORIGINS, list) else [self.CORS_ORIGINS]
+        if self.FRONTEND_URL:
+            for url in self.FRONTEND_URL.split(","):
+                clean_url = url.strip().rstrip("/")
+                if clean_url and clean_url not in origins:
+                    origins.append(clean_url)
+        return origins
 
     @property
     def allowed_extensions(self) -> Set[str]:

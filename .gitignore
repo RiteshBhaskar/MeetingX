@@ -1,4 +1,4 @@
-# Python
+# Python & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -27,7 +27,7 @@ wheels/
 .coverage
 htmlcov/
 
-# Node
+# Node & Frontend Build
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -38,16 +38,23 @@ frontend/dist/
 frontend/dist-ssr/
 *.local
 
-# Environment & Secrets
+# Environment Files & Secrets (Never commit secrets)
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
+backend/.env
+frontend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
-# Project local storage
+# Temporary Media Storage & Whisper Models (Ephemeral)
 data/
 backend/data/
+backend/data/uploads/*
+backend/data/extracted/*
+backend/data/models/*
+models/
 *.wav
 *.mp3
 *.m4a
@@ -58,10 +65,17 @@ backend/data/
 *.mov
 *.webm
 
-# OS & IDE
+# Application Logs
+*.log
+logs/
+backend/logs/
+
+# OS & IDE Configuration
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 *.swp
 *.swo
+*.sublime-workspace
+*.sublime-project

@@ -1,8 +1,15 @@
 import axios from 'axios';
 
-// Base API configuration (Vite proxy forwards /api to backend)
+// Base API configuration: Uses VITE_API_URL (or VITE_API_BASE_URL) if defined; falls back to Vite proxy /api/v1 for local dev
+const rawUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const baseURL = rawUrl.endsWith('/api/v1') 
+  ? rawUrl 
+  : rawUrl === '/api/v1' 
+  ? '/api/v1' 
+  : `${rawUrl.replace(/\/+$/, '')}/api/v1`;
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: baseURL,
   timeout: 600000, // 10 minutes timeout for transcribing long recordings
 });
 
@@ -17,7 +24,7 @@ export async function checkHealth() {
     if (error.response) {
       throw new Error(error.response.data?.detail || `Health check failed (${error.response.status})`);
     } else if (error.request) {
-      throw new Error('Cannot connect to backend server. Make sure FastAPI is running on http://127.0.0.1:8000');
+      throw new Error('Cannot connect to backend server. Please verify the backend is running and accessible.');
     } else {
       throw new Error(error.message || 'Unknown network error occurred');
     }
